@@ -2,8 +2,8 @@ pacman::p_load(tidyverse,
                data.table)
 
 n = 100000
+allocation <- vector(length = n)
 key_pair = fread("key.csv")
-strategy = "Strat2"
 
 #INTAKE=======================
 intake <- function(subdirectory) {
@@ -26,7 +26,7 @@ distribute <- function(param1, param2, n, distribution = c("gamma", "beta", "uni
   } else if (distribution == "lnorm"){
     allocation <- rlnorm(n, param1, param2)
   } else if (distribution == "norm"){
-    allocation <- rnorm(n, param1, param2)
+    allocation <- rgamma(n, (param1/param2)^2, param1/param2^2)
   } else tryCatch(print("Please select a distribution from either gamma, beta, log-normal, or uniform"))
   
   summary <- data.frame(dist = distribution,
@@ -52,16 +52,29 @@ compare.distros <- function(strategy = c("Strat1", "Strat2", "Strat3")){
   strat <- intake(subdirectory = strategy) %>% 
     check.dist() %>% 
     cbind(intake_raw) %>% 
-    select(`PSA spreadsheet` = File,
-           alpha, beta,
-           dist, mu, sigma) %>% 
-    left_join(., key_pair) %>% 
+    rename(`PSA spreadsheet` = File) %>%
     as.data.frame() %>%
-    unique()
-  
+    unnest(cols = c(dist, alpha, beta, mu, sigma)) %>%
+    mutate(dist = as.character(dist),
+           alpha_temp = ifelse(dist == "norm", (alpha/beta)^2, NA_character_),
+           beta = ifelse(dist == "norm", alpha/beta^2, beta),
+           alpha = ifelse(dist == "norm", alpha_temp, alpha),
+           dist = ifelse(dist == "norm", "norm to gamma", dist)) %>%
+    select(-alpha_temp) %>%
+    left_join(., key_pair) %>%
+    unique() %>% 
+    select(dist, alpha, beta, mu, sigma, 
+           `PSA spreadsheet`, block, agegrp, sex, oud,
+           `Matching Base Case Spreadsheet`)
+
   return(strat)
 }
 
-s <- compare.distros("Strat2")
-
+for (i in 1:3){
+  write.csv(as.matrix(
+    compare.distros(
+      paste0("Strat", i)
+    )
+  ), file = paste0("strat", i, "_update.csv"))
+}
 
