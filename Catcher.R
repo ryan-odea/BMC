@@ -1,9 +1,9 @@
 pacman::p_load(tidyverse,
                data.table)
 
-n = 1000000
+n = 100000
 key_pair = fread("key.csv")
-
+strategy = "Strat2"
 
 #INTAKE=======================
 intake <- function(subdirectory) {
@@ -17,7 +17,6 @@ intake <- function(subdirectory) {
 }
 #DRAW DISTRIBUTION=============
 distribute <- function(param1, param2, n, distribution = c("gamma", "beta", "unif", "lnorm", "norm")){
-  set.seed(2022)
   if (distribution == "gamma"){
     allocation <- rgamma(n, param1, param2) 
   } else if (distribution == "beta"){
@@ -56,15 +55,13 @@ compare.distros <- function(strategy = c("Strat1", "Strat2", "Strat3")){
     select(`PSA spreadsheet` = File,
            alpha, beta,
            dist, mu, sigma) %>% 
-    left_join(., key_pair)
+    left_join(., key_pair) %>% 
+    as.data.frame() %>%
+    unique()
   
-  base_case <- intake(paste0("input", gsub("Strat", "", strategy), "/")) %>% 
-    rename(`Matching Base Case Spreadsheet` = "File")
-  
-  join <- left_join(strat, base_case) %>%
-    filter(!is.na(dist))
-  
-  return(join)
+  return(strat)
 }
 
-Strat_1_Comparison <- compare.distros(strategy = "Strat1")
+s <- compare.distros("Strat2")
+
+
