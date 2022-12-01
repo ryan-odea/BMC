@@ -1,0 +1,13 @@
+"block","agegrp","sex","oud","healthcare_system_dist","healthcare_system_param1","healthcare_system_param2"
+"no_trt","10_24","all","active_noninj","norm",243,5263.88785
+"no_trt","10_24","all","active_inj","norm",355.96,5516.95938
+"no_trt","10_24","all","nonactive_noninj","norm",162.22,4783.05194
+"no_trt","10_24","all","nonactive_inj","norm",260.11,5516.95938
+"no_trt","25_44","all","active_noninj","norm",360,5466.34508
+"no_trt","25_44","all","active_inj","norm",496.32,5187.96639
+"no_trt","25_44","all","nonactive_noninj","norm",253.05,5010.81632
+"no_trt","25_44","all","nonactive_inj","norm",374.02,5036.12348
+"no_trt","45_99","all","active_noninj","norm",301,8908.11791
+"no_trt","45_99","all","active_inj","norm",422.49,9667.3325
+"no_trt","45_99","all","nonactive_noninj","norm",201.97,5896.56668
+"no_trt","45_99","all","nonactive_inj","norm",306.67,6402.70974
