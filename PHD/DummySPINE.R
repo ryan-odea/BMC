@@ -21,6 +21,7 @@ raw.intake <- function(directory){
   
   intake <- intake[-id_check]
 }
+
 raw.merge <- function(df, filter){
   df %>% select(contains(paste(filter))) %>% 
     unite(., merge, paste(colnames(.))) %>% 
@@ -29,9 +30,10 @@ raw.merge <- function(df, filter){
                         gsub("NA", "",
                              gsub("_", "", merge))))
 }
+
 raw.clean <- function(df_list){
   data <- purrr::reduce(df_list, left_join, by = "ID") %>%
-    select(ID, contains(c("RACE", "SEX")),
+    select(ID, contains(c("RACE", "SEX", "HOMELESS")),
            -contains(c("FATHER", "MOTHER"))) %>% 
     group_by(ID) %>% 
     fill(.) %>%
@@ -46,7 +48,11 @@ raw.clean <- function(df_list){
     apply(., 1, function(x) names(which.max(table(strsplit(x, ""))))) %>% 
     data.frame("SEX_FINAL" = .)
   
-  main_merge <- cbind(data$ID, race_unite, sex_unite)
+  homeless_unite <- raw.merge(data, "HOMELESS") %>% 
+    apply(., 1, function(x) names(which.max(table(strsplit(x, ""))))) %>% 
+    data.frame("HOMELESS_FLAG" = .)
+  
+  main_merge <- cbind(data$ID, race_unite, sex_unite, homeless_unite)
   
   return(main_merge)
 }
