@@ -35,16 +35,15 @@ PROC FORMAT;
             'F1120', 'F1121', 'F1110', 'F11120',
             'F11121', 'F11122', 'F11129', 'F1114',
             'F11150', 'F11151', 'F11159', 'F11181',
-            'F11182', 'F11188', 'F11190', 'F1119',
+            'F11182', 'F11188', 'F1119',
             'F11220', 'F11221', 'F11222', 'F11229',
             'F1123', 'F1124', 'F11250', 'F11251',
             'F11259', 'F11281', 'F11282', 'F11288',
             'F1129', 'F1190', 'F11920', 'F11921',
-            'F11922', 'F11929', 'F11913', 'F11914',
-            'F1193', 'F1194', 'F11950', 'F11951',
-            'F11959', 'F11981', 'F11982', 'F11989',
-            'F1199', 'F1110', 'F1111', /* Additional for HCS */
-            'F1113', 'H0047', 'J0592', 'G2068',
+            'F11922', 'F11929','F1193', 'F1194', 
+			'F11950', 'F11951', 'F11959', 'F11981', 
+			'F11982', 'F1199', 'F1110', 'F1111', /* Additional for HCS */
+            'F1113', 'J0592', 'G2068',
             'G2069', 'G2070', 'G2071', 'G2072',
             'G2073', 'G2079', 'J0570', 'J0571',
             'J0572', 'J0573', 'J0574', 'J0575', /* Additional for Bup */
@@ -72,7 +71,8 @@ PROC FORMAT;
 			'G2080', 'G2081', /*Opioid Trt */
  			'J0570', 'J0571', 'J0572', 'J0573', 
  			'J0574', 'J0575', 'J0592', 'S0109', 
-            'G2215', 'G2216', 'G1028' /* Naloxone */);
+            'G2215', 'G2216', 'G1028', /* Naloxone */
+			'H0047' /* DEBATED CODE */);
 
 %LET bsas_drugs = (5,6,7,21,22,23,24);
             
@@ -101,8 +101,8 @@ DATA apcd (KEEP = ID oud_apcd agegrp_apcd);
 	SET PHDAPCD.MEDICAL (KEEP = ID MED_ENCODE MED_ADM_DIAGNOSIS MED_AGE
 								MED_ICD_PROC1-MED_ICD_PROC7
 								MED_ICD1-MED_ICD25
-								MED_FROM_DATE_YEAR)
-						WHERE = (MED_FROM_DATE_YEAR = &year);
+								MED_FROM_DATE_YEAR
+						WHERE = (MED_FROM_DATE_YEAR = &year));
 	cnt_oud_apcd = 0;
 	oud_apcd = 0;
 	year =  MED_FROM_DATE_YEAR;
@@ -129,8 +129,8 @@ QUIT;
 /*======CASEMIX DATA==========*/
 /* ED */
 DATA casemix_ed (KEEP = ID oud_cm_ed ED_ID agegrp_ed);
-	SET PHDCM.ED (KEEP = ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_AGE)
-				  WHERE = (ED_ADMIT_YEAR = &year);
+	SET PHDCM.ED (KEEP = ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_AGE ED_ID
+				  WHERE = (ED_ADMIT_YEAR = &year));
 	IF ED_DIAG1 in &ICD OR ED_PRINCIPLE_ENCODE in &ICD
 	THEN oud_cm_ed = 1;
 	ELSE oud_cm_ed = 0;
@@ -146,8 +146,8 @@ QUIT;
 
 /* ED_DIAG */
 DATA casemix_ed_diag (KEEP = oud_cm_ed_diag ED_ID);
-	SET PHDCM.ED_DIAG (KEEP = ED_ID ED_DIAG ED_ADMIT_YEAR, ED_AGE)
-					   WHERE = (ED_ADMIT_YEAR = &year);
+	SET PHDCM.ED_DIAG (KEEP = ED_ID ED_DIAG ED_ADMIT_YEAR, ED_AGE
+					   WHERE = (ED_ADMIT_YEAR = &year));
 	IF ED_DIAG in &ICD
 	THEN oud_cm_ed_diag = 1;
 	ELSE oud_cm_ed_diag = 0;
@@ -200,7 +200,7 @@ QUIT;
 /* HD DATA */
 DATA hd (KEEP = ID oud_hd_raw agegrp_hd);
 	SET PHDCM.HD (KEEP = ID HD_DIAG1 HD_PROC1 HD_ADMIT_YEAR HD_AGE);
-					WHERE (HD_ADMIT_YEAR = &year);
+					WHERE = (HD_ADMIT_YEAR = &year);
 	IF HD_DIAG1 in &ICD OR HD_PROC1 in &ICD
 	THEN oud_hd_raw = 1;
 	ELSE oud_hd_raw = 0;
@@ -216,8 +216,8 @@ QUIT;
 
 /* HD DIAG DATA */
 DATA hd_diag (KEEP = ID oud_hd_diag);
-	SET PHDCM.HD_DIAG (KEEP = ID HD_DIAG HD_ADMIT_YEAR);
-						WHERE (HD_ADMIT_YEAR &=year);
+	SET PHDCM.HD_DIAG (KEEP = ID HD_DIAG HD_ADMIT_YEAR
+						WHERE = (HD_ADMIT_YEAR = &year));
 	IF HD_DIAG in &ICD
 	THEN oud_hd_diag = 1;
 	ELSE oud_hd_diag = 0;
@@ -404,7 +404,7 @@ DATA oud;
 	agegrp = min(agegrp_apcd, agegrp_cm, agegrp_matris, agegrp_bsas, agegrp_pmp)
 RUN;
 
-ODS CSV FILE = cat(%year, "_OUDCount.csv");
+ODS CSV FILE = cat(&year, "_OUDCount.csv");
 PROC SQL;
     CREATE TABLE oud_stratified AS
     SELECT DISTINCT *

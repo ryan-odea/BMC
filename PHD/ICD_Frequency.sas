@@ -1,0 +1,162 @@
+/*==============================*/
+/* Project: RESPOND    			*/
+/* Author: Ryan O'Dea  			*/ 
+/* Created: 12/16/2022 			*/
+/* Updated: NA         			*/
+/*==============================*/
+
+%LET year = 2020
+
+%LET ICD = ('30400', '30401', '30402', '30403',
+            '30470', '30471', '30472', '30473',
+            '30550', '30551', '30552', '30553',
+            'E8500', 'E8501', 'E8502', '96500',
+            '96501', '96502', '96509', '9701', /* ICD9 */
+            'F1120', 'F1121', 'F1110', 'F11120',
+            'F11121', 'F11122', 'F11129', 'F1114',
+            'F11150', 'F11151', 'F11159', 'F11181',
+            'F11182', 'F11188', 'F1119',
+            'F11220', 'F11221', 'F11222', 'F11229',
+            'F1123', 'F1124', 'F11250', 'F11251',
+            'F11259', 'F11281', 'F11282', 'F11288',
+            'F1129', 'F1190', 'F11920', 'F11921',
+            'F11922', 'F11929','F1193', 'F1194', 
+			'F11950', 'F11951', 'F11959', 'F11981', 
+			'F11982', 'F1199', 'F1110', 'F1111', /* Additional for HCS */
+            'F1113', 'J0592', 'G2068',
+            'G2069', 'G2070', 'G2071', 'G2072',
+            'G2073', 'G2079', 'J0570', 'J0571',
+            'J0572', 'J0573', 'J0574', 'J0575', /* Additional for Bup */
+            'H0020', 'G2067', 'G2078', 'S0109',
+            'J1230', 'HZ91ZZZ', 'HZ81ZZZ', '9464', /* Additional for Methedone */
+            'T40.0X1A', 'T40.0X2A', 'T40.0X3A', 'T40.0X4A',
+            'T40.0X1D', 'T40.0X2D', 'T40.0X3D', 'T40.0X4D',
+            'T40.1X1A', 'T40.1X2A', 'T40.1X3A', 'T40.1X4A',
+            'T40.1X1D', 'T40.1X2D', 'T40.1X3D', 'T40.1X4D',
+            'T40.2X1A', 'T40.2X2A', 'T40.2X3A', 'T40.2X4A',
+            'T40.2X1D', 'T40.2X2D', 'T40.2X3D', 'T40.2X4D', 
+			'T40.3X1A', 'T40.3X2A', 'T40.3X3A', 'T40.3X4A', 
+			'T40.3X1D', 'T40.3X2D', 'T40.3X3D', 'T40.3X4D', 
+			'T40.4X1A', 'T40.4X2A', 'T40.4X3A', 'T40.4X4A', 
+			'T40.4X1D', 'T40.4X2D', 'T40.4X3D', 'T40.4X4D',
+			'T40.601A', 'T40.601D', 'T40.602A', 'T40.602D', 
+			'T40.603A', 'T40.603D', 'T40.604A', 'T40.604D', 
+			'T40.691A', 'T40.692A', 'T40.693A', 'T40.694A', 
+			'T40.691D', 'T40.692D', 'T40.693D', 'T40.694D', /* T codes */
+			'E8500', 'E8501', 'E8502', /* Principle Encodes */
+			'G2067', 'G2068', 'G2069', 'G2070', 
+			'G2071', 'G2072', 'G2073', 'G2074', 
+			'G2075', /* MAT Opioid */
+			'G2076', 'G2077', 'G2078', 'G2079', 
+			'G2080', 'G2081', /*Opioid Trt */
+ 			'J0570', 'J0571', 'J0572', 'J0573', 
+ 			'J0574', 'J0575', 'J0592', 'S0109', 
+            'G2215', 'G2216', 'G1028', /* Naloxone */
+			'H0047' /* DEBATED CODE */);
+
+/*=========APCD DATA=============*/
+DATA apcd_wide;
+    SET PHDAPCD.MEDICAL (KEEP = ID MED_ENCODE MED_ADM_DIAGNOSIS
+                                MED_ICD_PROC1-MED_ICD_PROC7
+                                MED_ICD1-MED_ICD25
+                                MED_FROM_DATE_YEAR
+                        WHERE = (MED_FROM_DATE_YEAR = &year));
+    DROP MED_FROM_DATE_YEAR;
+RUN;
+
+/*======CASEMIX DATA==========*/
+/* ED */
+DATA ed_wide;
+    SET PHDCM.ED (KEEP = ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_ID
+                  WHERE = (ED_ADMIT_YEAR = &year));
+    DROP ED_ADMIT_YEAR;
+RUN;
+
+DATA ed_diag_wide;
+    SET PHDCM.ED_DIAG (KEEP = ID ED_ID ED_DIAG ED_ADMIT_YEAR
+                       WHERE = (ED_ADMIT_YEAR = &year));
+    DROP ED_ADMIT_YEAR;
+RUN;
+
+DATA ed_proc_wide;
+    SET PHDCM.ED_PROC (KEEP = ED_ID ED_PROC);
+RUN;
+
+/* CASEMIX ED MERGE */
+PROC SQL;
+    CREATE TABLE ed_wide AS
+    SELECT * FROM ed_wide
+    LEFT JOIN ed_diag_wide ON ed_wide.ED_ID = ed_diag_wide.ED_ID
+    LEFT JOIN ed_proc_wide ON ed_diag_wide.ED_ID = ed_proc_wide.ED_ID;
+QUIT;
+
+/* HD */
+DATA hd_raw_wide;
+    SET PHDCM.HD (KEEP = ID HD_DIAG1 HD_PROC1 HD_ADMIT_YEAR
+                    WHERE = (HD_ADMIT_YEAR = &year));
+    DROP HD_ADMIT_YEAR;
+RUN;
+
+/* HD DIAG */
+DATA hd_diag_wide;
+    SET PHDCM.HD_DIAG (KEEP = ID HD_DIAG HD_ADMIT_YEAR
+                        WHERE = (HD_ADMIT_YEAR = &year));
+    DROP HD_ADMIT_YEAR;
+RUN;
+
+/* HD MERGE */
+PROC SQL;
+    CREATE TABLE hd_wide AS
+    SELECT * 
+    FROM hd_raw_wide
+    LEFT JOIN hd_diag_wide ON hd_raw_wide.ID = hd_diag_wide.ID
+QUIT;
+
+/* OO */
+DATA oo_wide;
+    SET PHDCM.OO (KEEP = ID OO_DIAG1-6 OO_PROC1-4 00_ADMIT_YEAR
+                    WHERE = (OO_ADMIT_YEAR = &year));
+RUN;
+
+/*FULL CASEMIX MERGE */
+PROC SQL;
+    CREATE TABLE cm_wide AS
+    SELECT * FROM ed_wide
+    FULL JOIN hd_wide ON ed_wide.ID = hd_wide.ID
+    FULL JOIN oo_wide ON hd_wide.ID = oo_wide.ID
+QUIT;
+
+DATA cm_wide;
+    SET cm_wide;
+    DROP ED_ID;
+RUN;
+
+/* FULL JOIN */
+PROC SQL;
+    CREATE TABLE icd_wide AS
+    SELECT * FROM apcd_wide
+    FULL JOIN cm_wide ON apcd_wide.ID = cm_wide.ID
+QUIT;
+
+PROC TRANSPOSE DATA = icd_wide OUT = icd;
+    by ID;
+RUN;
+
+DATA icd (KEEP = ID ICD);
+    SET icd (KEEP = ID rename = (COL1 = ICD_Codes)
+            WHERE = (COL1 in &ICD));
+RUN;
+
+PROC FREQ DATA = icd_freq;
+    TABLES ICD_Codes;
+RUN;
+
+
+/* FREQUENCY TABLE PRINT*/
+ODS CSV FILE = cat(&year, "_ICDFreq.csv");
+DATA icd_freq;
+    IF count <10 AND > 0
+    THEN count = -1
+RUN;
+ODS CSV CLOSE;
+
