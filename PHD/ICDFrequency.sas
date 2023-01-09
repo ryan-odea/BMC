@@ -69,7 +69,7 @@ RUN;
 DATA ed_wide;
     SET PHDCM.ED (KEEP = ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_ID
                   WHERE = (ED_ADMIT_YEAR = &year));
-    DROP ED_ADMIT_YEAR;
+     DROP ED_ADMIT_YEAR;
 RUN;
 
 DATA ed_diag_wide;
