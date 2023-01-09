@@ -117,7 +117,7 @@ DATA apcd (KEEP = ID oud_apcd agegrp_apcd);
 	IF cnt_oud_apcd > 0 THEN oud_apcd = 1;
 	IF oud_apcd = 0 THEN DELETE;
 
-	agegrp = put(MED_AGE, age_grps.);
+	agegrp_apcd = put(MED_AGE, age_grps.);
 RUN;
 
 PROC SQL;
@@ -412,5 +412,6 @@ PROC SQL;
     -1,
     COUNT(DISTINCT ID) AS N_ID_RSA)
     FROM oud
-    GROUP BY agegrp, FINAL_RE, FINAL_SEX;
+    GROUP BY agegrp, FINAL_RE, FINAL_SEX
+QUIT;
 ODS CSV CLOSE;

@@ -51,8 +51,7 @@
 			'G2080', 'G2081', /*Opioid Trt */
  			'J0570', 'J0571', 'J0572', 'J0573', 
  			'J0574', 'J0575', 'J0592', 'S0109', 
-            'G2215', 'G2216', 'G1028', /* Naloxone */
-			'H0047' /* DEBATED CODE */);
+            'G2215', 'G2216', 'G1028', /* Naloxone */);
 
 /*=========APCD DATA=============*/
 DATA apcd_wide;
@@ -109,12 +108,12 @@ PROC SQL;
     CREATE TABLE hd_wide AS
     SELECT * 
     FROM hd_raw_wide
-    LEFT JOIN hd_diag_wide ON hd_raw_wide.ID = hd_diag_wide.ID
+    LEFT JOIN hd_diag_wide ON hd_raw_wide.ID = hd_diag_wide.ID;
 QUIT;
 
 /* OO */
 DATA oo_wide;
-    SET PHDCM.OO (KEEP = ID OO_DIAG1-6 OO_PROC1-OO_PROC4 OO_ADMIT_YEAR
+    SET PHDCM.OO (KEEP = ID OO_DIAG1-OO_DIAG6 OO_PROC1-OO_PROC4 OO_ADMIT_YEAR
                     WHERE = (OO_ADMIT_YEAR = &year));
 RUN;
 
@@ -123,7 +122,7 @@ PROC SQL;
     CREATE TABLE cm_wide AS
     SELECT * FROM ed_wide
     FULL JOIN hd_wide ON ed_wide.ID = hd_wide.ID
-    FULL JOIN oo_wide ON hd_wide.ID = oo_wide.ID
+    FULL JOIN oo_wide ON hd_wide.ID = oo_wide.ID;
 QUIT;
 
 DATA cm_wide;
@@ -135,28 +134,77 @@ RUN;
 PROC SQL;
     CREATE TABLE icd_wide AS
     SELECT * FROM apcd_wide
-    FULL JOIN cm_wide ON apcd_wide.ID = cm_wide.ID
+    FULL JOIN cm_wide ON apcd_wide.ID = cm_wide.ID;
 QUIT;
 
-PROC TRANSPOSE DATA = icd_wide OUT = icd;
-    by ID;
+DATA h0047_flag (KEEP = ID h0047_flag);
+    SET icd;
+    h0047_flag = 0;
+    ARRAY vars1{*} ID MED_ENCODE MED_ADM_DIAGNOSIS
+                   MED_ICD_PROC1-MED_ICD_PROC7 MED_ICD1-MED_ICD25
+                   ED_DIAG1 ED_PRINCIPLE_ENCODE
+                   ED_DIAG ED_PROC
+                   HD_DIAG1 HD_PROC HD_DIAG
+                   OO_DIAG1-OO_DIAG6 OO_PROC1-OO_PROC4;
+        DO i = 1 TO dim(vars1);
+            IF vars1[i] = "H0047"
+            THEN h0047_flag = h0047_flag+1;
+        END;
+        DROP i;
+    IF h0047_flag > 0 THEN h0047_flag = 1;
+    IF h0047_flag = 0 THEN DELETE;
 RUN;
 
-DATA icd (KEEP = ID ICD);
-    SET icd (KEEP = ID rename = (COL1 = ICD_Codes)
-            WHERE = (COL1 in &ICD));
+PROC SQL;
+    CREATE TABLE h0047_flag AS
+    SELECT DISTINCT *
+    FROM h0047_flag;
+QUIT;
+
+DATA icd_flag (KEEP = ID icd_flag);
+    SET icd;
+    icd_flag = 0;
+    ARRAY vars1{*} ID MED_ENCODE MED_ADM_DIAGNOSIS
+                   MED_ICD_PROC1-MED_ICD_PROC7 MED_ICD1-MED_ICD25
+                   ED_DIAG1 ED_PRINCIPLE_ENCODE
+                   ED_DIAG ED_PROC
+                   HD_DIAG1 HD_PROC HD_DIAG
+                   OO_DIAG1-OO_DIAG6 OO_PROC1-OO_PROC4;
+        DO i = 1 TO dim(vars1);
+            IF vars1[i] = &ICD
+            THEN icd_flag = icd_flag+1;
+        END;
+        DROP i;
+    IF icd_flag > 0 THEN icd_flag = 1;
 RUN;
 
-PROC FREQ DATA = icd_freq;
-    TABLES ICD_Codes;
-RUN;
+PROC SQL;
+    CREATE TABLE icd_flag AS
+    SELECT DISTINCT *
+    FROM icd_flag;
+QUIT;
 
+PROC SQL;
+    CREATE TABLE flag AS
+    SELECT * FROM h0047_flag
+    LEFT JOIN icd_flag ON h0047_flag.ID = icd_flag.ID;
+QUIT;
+
+DATA flag;
+    SET flag;
+    OnlyIn = 0;
+    IF icd_flag = 0 AND h0047_flag = 1
+    THEN OnlyIn = 1;
+RUN;
 
 /* FREQUENCY TABLE PRINT*/
 ODS CSV FILE = cat(&year, "_ICDFreq.csv");
-DATA icd_freq;
-    IF count <10 AND > 0
-    THEN count = -1
-RUN;
-ODS CSV CLOSE;
+PROC SQL;
+    CREATE TABLE flag AS
+    SELECT DISTINCT * 
+    IFN(COUNT(DISTINCT ID) > 0 AND COUNT(DISTINCT ID) < 11, -1,
+    COUNT(DISTINCT ID) AS N_ID_RSA)
+    FROM flag;
+QUIT;
 
+ODS CSV CLOSE;
