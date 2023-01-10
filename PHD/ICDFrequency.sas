@@ -5,7 +5,7 @@
 /* Updated: NA         			*/
 /*==============================*/
 
-%LET year = 2020
+%LET year = 2020;
 
 %LET ICD = ('30400', '30401', '30402', '30403',
             '30470', '30471', '30472', '30473',
@@ -56,30 +56,36 @@
 
 /*=========APCD DATA=============*/
 DATA apcd_wide;
-    SET PHDAPCD.MEDICAL (KEEP = ID MED_ENCODE MED_ADM_DIAGNOSIS
+    SET PHDAPCD.MEDICAL (KEEP= ID MED_ECODE MED_ADM_DIAGNOSIS
                                 MED_ICD_PROC1-MED_ICD_PROC7
                                 MED_ICD1-MED_ICD25
                                 MED_FROM_DATE_YEAR
-                        WHERE = (MED_FROM_DATE_YEAR = &year));
+                        WHERE= (MED_FROM_DATE_YEAR = &year));
     DROP MED_FROM_DATE_YEAR;
 RUN;
 
 /*======CASEMIX DATA==========*/
 /* ED */
 DATA ed_wide;
+<<<<<<< Updated upstream:PHD/ICDFrequency.sas
     SET PHDCM.ED (KEEP = ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_ID
                   WHERE = (ED_ADMIT_YEAR = &year));
      DROP ED_ADMIT_YEAR;
+=======
+    SET PHDCM.ED (KEEP= ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_ID
+                  WHERE= (ED_ADMIT_YEAR = &year));
+    DROP ED_ADMIT_YEAR;
+>>>>>>> Stashed changes:PHD/ICD_Frequency.sas
 RUN;
 
 DATA ed_diag_wide;
-    SET PHDCM.ED_DIAG (KEEP = ID ED_ID ED_DIAG ED_ADMIT_YEAR
-                       WHERE = (ED_ADMIT_YEAR = &year));
+    SET PHDCM.ED_DIAG (KEEP= ID ED_ID ED_DIAG ED_ADMIT_YEAR
+                       WHERE= (ED_ADMIT_YEAR = &year));
     DROP ED_ADMIT_YEAR;
 RUN;
 
 DATA ed_proc_wide;
-    SET PHDCM.ED_PROC (KEEP = ED_ID ED_PROC);
+    SET PHDCM.ED_PROC (KEEP= ED_ID ED_PROC);
 RUN;
 
 /* CASEMIX ED MERGE */
@@ -92,15 +98,15 @@ QUIT;
 
 /* HD */
 DATA hd_raw_wide;
-    SET PHDCM.HD (KEEP = ID HD_DIAG1 HD_PROC1 HD_ADMIT_YEAR
-                    WHERE = (HD_ADMIT_YEAR = &year));
+    SET PHDCM.HD (KEEP= ID HD_DIAG1 HD_PROC1 HD_ADMIT_YEAR
+                    WHERE= (HD_ADMIT_YEAR = &year));
     DROP HD_ADMIT_YEAR;
 RUN;
 
 /* HD DIAG */
 DATA hd_diag_wide;
-    SET PHDCM.HD_DIAG (KEEP = ID HD_DIAG HD_ADMIT_YEAR
-                        WHERE = (HD_ADMIT_YEAR = &year));
+    SET PHDCM.HD_DIAG (KEEP= ID HD_DIAG HD_ADMIT_YEAR
+                        WHERE= (HD_ADMIT_YEAR = &year));
     DROP HD_ADMIT_YEAR;
 RUN;
 
@@ -109,13 +115,18 @@ PROC SQL;
     CREATE TABLE hd_wide AS
     SELECT * 
     FROM hd_raw_wide
-    LEFT JOIN hd_diag_wide ON hd_raw_wide.ID = hd_diag_wide.ID
+    LEFT JOIN hd_diag_wide ON hd_raw_wide.ID = hd_diag_wide.ID;
 QUIT;
 
 /* OO */
 DATA oo_wide;
+<<<<<<< Updated upstream:PHD/ICDFrequency.sas
     SET PHDCM.OO (KEEP = ID OO_DIAG1-6 OO_PROC1-OO_PROC4 OO_ADMIT_YEAR
                     WHERE = (OO_ADMIT_YEAR = &year));
+=======
+    SET PHDCM.OO (KEEP= ID OO_DIAG1-OO_DIAG6 OO_PROC1-OO_PROC4 OO_ADMIT_YEAR
+                    WHERE= (OO_ADMIT_YEAR = &year));
+>>>>>>> Stashed changes:PHD/ICD_Frequency.sas
 RUN;
 
 /*FULL CASEMIX MERGE */
@@ -123,7 +134,7 @@ PROC SQL;
     CREATE TABLE cm_wide AS
     SELECT * FROM ed_wide
     FULL JOIN hd_wide ON ed_wide.ID = hd_wide.ID
-    FULL JOIN oo_wide ON hd_wide.ID = oo_wide.ID
+    FULL JOIN oo_wide ON hd_wide.ID = oo_wide.ID;
 QUIT;
 
 DATA cm_wide;
@@ -135,28 +146,29 @@ RUN;
 PROC SQL;
     CREATE TABLE icd_wide AS
     SELECT * FROM apcd_wide
-    FULL JOIN cm_wide ON apcd_wide.ID = cm_wide.ID
+    FULL JOIN cm_wide ON apcd_wide.ID = cm_wide.ID;
 QUIT;
 
 PROC TRANSPOSE DATA = icd_wide OUT = icd;
     by ID;
 RUN;
 
-DATA icd (KEEP = ID ICD);
-    SET icd (KEEP = ID rename = (COL1 = ICD_Codes)
-            WHERE = (COL1 in &ICD));
+DATA icd (KEEP= ID ICD);
+    SET icd (KEEP= ID rename=(COL1 = ICD_Codes)
+            WHERE= (COL1 in &ICD));
 RUN;
 
 PROC FREQ DATA = icd_freq;
     TABLES ICD_Codes;
 RUN;
 
-
-/* FREQUENCY TABLE PRINT*/
-ODS CSV FILE = cat(&year, "_ICDFreq.csv");
 DATA icd_freq;
     IF count <10 AND > 0
     THEN count = -1
 RUN;
-ODS CSV CLOSE;
 
+PROC EXPORT
+    DATA= icd_freq
+    OUTFILE= cat("/sas/data/DPH/OPH/PHD/FOLDERS/SUBSTANCE_USE_CODE/RESPOND/RESPOND UPDATE/ICDFrequency_", &year, ".csv")
+    DBMS= csv;
+RUN;

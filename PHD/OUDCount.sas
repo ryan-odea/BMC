@@ -10,7 +10,7 @@
 /*==============================*/
 
 /*===========YEARS==============*/
-%LET year = 2020
+%LET year = 2020;
 
 /*===========AGE================*/
 PROC FORMAT;
@@ -79,14 +79,6 @@ PROC FORMAT;
 /*===============================*/            
 /*			DATA PULL			 */
 /*===============================*/ 
-
-/*======DEMOGRAPHIC DATA=========*/
-PROC SQL;
-	CREATE TABLE demographics AS
-	SELECT DISTINCT ID, FINAL_RE, FINAL_SEX
-	FROM PHDSPINE.DEMO;
-QUIT;
-
 /*======DEMOGRAPHIC DATA=========*/
 PROC SQL;
 	CREATE TABLE demographics AS
@@ -95,14 +87,14 @@ PROC SQL;
 QUIT;
 
 /*=========APCD DATA=============*/
-DATA apcd (KEEP = ID oud_apcd agegrp_apcd);
+DATA apcd (KEEP= ID oud_apcd agegrp_apcd);
 
 /* OUD Identification */
-	SET PHDAPCD.MEDICAL (KEEP = ID MED_ENCODE MED_ADM_DIAGNOSIS MED_AGE
+	SET PHDAPCD.MEDICAL (KEEP= ID MED_ENCODE MED_ADM_DIAGNOSIS MED_AGE
 								MED_ICD_PROC1-MED_ICD_PROC7
 								MED_ICD1-MED_ICD25
 								MED_FROM_DATE_YEAR
-						WHERE = (MED_FROM_DATE_YEAR = &year));
+						WHERE= (MED_FROM_DATE_YEAR = &year));
 	cnt_oud_apcd = 0;
 	oud_apcd = 0;
 	year =  MED_FROM_DATE_YEAR;
@@ -113,7 +105,7 @@ DATA apcd (KEEP = ID oud_apcd agegrp_apcd);
 		IF vars1[i] in &ICD
 		THEN cnt_oud_apcd = cnt_oud_apcd+1;
 		END;
-		DROP i;
+		DROP= i;
 	IF cnt_oud_apcd > 0 THEN oud_apcd = 1;
 	IF oud_apcd = 0 THEN DELETE;
 
@@ -128,14 +120,14 @@ QUIT;
 
 /*======CASEMIX DATA==========*/
 /* ED */
-DATA casemix_ed (KEEP = ID oud_cm_ed ED_ID agegrp_ed);
-	SET PHDCM.ED (KEEP = ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_AGE ED_ID
-				  WHERE = (ED_ADMIT_YEAR = &year));
+DATA casemix_ed (KEEP= ID oud_cm_ed ED_ID agegrp_ed);
+	SET PHDCM.ED (KEEP= ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_AGE ED_ID
+				  WHERE= (ED_ADMIT_YEAR = &year));
 	IF ED_DIAG1 in &ICD OR ED_PRINCIPLE_ENCODE in &ICD
 	THEN oud_cm_ed = 1;
 	ELSE oud_cm_ed = 0;
 	
-	agegrp_ed = put(ED_AGE, age_grps.)
+	agegrp_ed = put(ED_AGE, age_grps.);
 RUN;
 
 PROC SQL;
@@ -145,9 +137,9 @@ PROC SQL;
 QUIT;
 
 /* ED_DIAG */
-DATA casemix_ed_diag (KEEP = oud_cm_ed_diag ED_ID);
-	SET PHDCM.ED_DIAG (KEEP = ED_ID ED_DIAG ED_ADMIT_YEAR, ED_AGE
-					   WHERE = (ED_ADMIT_YEAR = &year));
+DATA casemix_ed_diag (KEEP= oud_cm_ed_diag ED_ID);
+	SET PHDCM.ED_DIAG (KEEP= ED_ID ED_DIAG ED_ADMIT_YEAR, ED_AGE
+					   WHERE= (ED_ADMIT_YEAR = &year));
 	IF ED_DIAG in &ICD
 	THEN oud_cm_ed_diag = 1;
 	ELSE oud_cm_ed_diag = 0;
@@ -160,8 +152,8 @@ PROC SQL;
 QUIT;
 
 /* ED_PROC */
-DATA casemix_ed_proc (KEEP = oud_cm_ed_proc ED_ID);
-	SET PHDCM.ED_PROC (KEEP = ED_ID ED_PROC);
+DATA casemix_ed_proc (KEEP= oud_cm_ed_proc ED_ID);
+	SET PHDCM.ED_PROC (KEEP= ED_ID ED_PROC);
 	IF ED_PROC in &ICD
 	THEN oud_cm_ed_proc = 1;
 	ELSE oud_cm_ed_proc = 0;
@@ -169,7 +161,7 @@ RUN;
 
 PROC SQL;
 	CREATE TABLE casemix_ed_proc AS
-	SELECT DISTINCT oud_cm_ed_proc ED_ID
+	SELECT DISTINCT oud_cm_ed_proc, ED_ID
 	FROM casemix_ed_proc;
 QUIT;
 
@@ -182,8 +174,8 @@ PROC SQL;
 	LEFT JOIN casemix_ed_proc ON casemix_ed_diag.ED_ID = casemix_ed_proc.ED_ID;
 QUIT;
 
-DATA casemix (KEEP = ID oud_casemix agegrp_ed);
-	SET casemix (KEEP = ID oud_cm_ed_proc oud_cm_ed_diag oud_cm_ed);
+DATA casemix (KEEP= ID oud_casemix agegrp_ed);
+	SET casemix (KEEP= ID oud_cm_ed_proc oud_cm_ed_diag oud_cm_ed);
 	IF SUM(oud_cm_ed_proc, oud_cm_ed_diag, oud_cm_ed) > 0
 	THEN oud_ed = 1;
 	ELSE oud_ed = 0;
@@ -198,14 +190,14 @@ PROC SQL;
 QUIT;
 
 /* HD DATA */
-DATA hd (KEEP = ID oud_hd_raw agegrp_hd);
-	SET PHDCM.HD (KEEP = ID HD_DIAG1 HD_PROC1 HD_ADMIT_YEAR HD_AGE);
-					WHERE = (HD_ADMIT_YEAR = &year);
+DATA hd (KEEP= ID oud_hd_raw agegrp_hd);
+	SET PHDCM.HD (KEEP= ID HD_DIAG1 HD_PROC1 HD_ADMIT_YEAR HD_AGE);
+					WHERE= (HD_ADMIT_YEAR = &year);
 	IF HD_DIAG1 in &ICD OR HD_PROC1 in &ICD
 	THEN oud_hd_raw = 1;
 	ELSE oud_hd_raw = 0;
 
-	agegrp_hd = put(HD_AGE, age_grps.)
+	agegrp_hd = put(HD_AGE, age_grps.);
 RUN;
 
 PROC SQL;
@@ -215,9 +207,9 @@ PROC SQL;
 QUIT;
 
 /* HD DIAG DATA */
-DATA hd_diag (KEEP = ID oud_hd_diag);
-	SET PHDCM.HD_DIAG (KEEP = ID HD_DIAG HD_ADMIT_YEAR
-						WHERE = (HD_ADMIT_YEAR = &year));
+DATA hd_diag (KEEP= ID oud_hd_diag);
+	SET PHDCM.HD_DIAG (KEEP= ID HD_DIAG HD_ADMIT_YEAR
+						WHERE= (HD_ADMIT_YEAR = &year));
 	IF HD_DIAG in &ICD
 	THEN oud_hd_diag = 1;
 	ELSE oud_hd_diag = 0;
@@ -250,13 +242,19 @@ RUN;
 DATA oo (KEEP = ID oud_oo);
     SET PHDCM.OO (KEEP = ID OO_DIAG1-6 OO_PROC1-4 OO_ADMIT_YEAR OO_AGE
                     WHERE = (OO_ADMIT_YEAR = &year));
+	cnt_oud_oo = 0
     ARRAY vars2 {*} OO_DIAG1-6 OO_PROC1-4;
         DO k = 1 TO dim(vars2);
         IF vars2[k] IN &ICD
-        THEN oud_oo = 1;
-        ELSE oud_oo = 0;
+        THEN cnt_oud_oo = cnt_oud_oo + 1;
+		END;
+		DROP= k;
 
-	agegrp_oo = put(OO_AGE, age_grps.)
+    IF cnt_oud_apcd > 1
+	THEN oud_oo = 1;
+	ELSE oud_oo = 1;
+
+	agegrp_oo = put(OO_AGE, age_grps.);
 RUN;
 
 PROC SQL;
@@ -271,7 +269,7 @@ PROC SQL;
     SELECT *
     FROM casemix
     FULL JOIN hd ON casemix.ID = hd.ID
-    FULL JOIN  ON hd.ID = oo.ID
+    FULL JOIN  ON hd.ID = oo.ID;
 QUIT;
 
 DATA casemix (KEEP = ID oud_casemix);
@@ -304,7 +302,7 @@ DATA bsas (KEEP = ID oud_bsas agegrp_bsas);
     IF oud_bsas = 0 THEN DELETE;
 
 	age_bsas = year(date()) - BIRTH_YEAR_BSAS;
-	agegrp_bsas = put(age_bsas, age_grps.)
+	agegrp_bsas = put(age_bsas, age_grps.);
 RUN;
 
 PROC SQL;
@@ -335,7 +333,7 @@ SET PHDEMS.MATRIS (KEEP = ID OPIOID_ORI_MATRIS
 	ELSE IF AGE_UNITS_MATRIS = 6 THEN age_matris = AGE_MATRIS;
 	ELSE age_matris = 999;
 
-	agegrp_matris = put(age_matris, age_grps.)
+	agegrp_matris = put(age_matris, age_grps.);
 
 RUN;
 
@@ -361,15 +359,15 @@ PROC SQL;
 QUIT;
 
 /* PMP */
-DATA pmp (KEEP = ID oud_pmp agegrp_pmp);
-    SET PHDPMP.PMP (KEEP = ID BUPRENORPHINE_PMP date_filled_year AGE_PMP
-                    WHERE = (date_filled_year = &year));
+DATA pmp (KEEP= ID oud_pmp agegrp_pmp);
+    SET PHDPMP.PMP (KEEP= ID BUPRENORPHINE_PMP date_filled_year AGE_PMP
+                    WHERE= (date_filled_year = &year));
     IF BUPRENORPHINE_PMP = 1 
     THEN oud_pmp = 1;
     ELSE oud_pmp = 0;
     IF oud_pmp = 0 THEN DELETE;
 
-	agegrp_pmp = put(AGE_PMP, age_grps.)
+	agegrp_pmp = put(AGE_PMP, age_grps.);
 RUN;
 
 PROC SQL;
@@ -401,17 +399,25 @@ DATA oud;
     ELSE oud_master = 0;
     IF oud_master = 0 THEN DELETE;
 
-	agegrp = min(agegrp_apcd, agegrp_cm, agegrp_matris, agegrp_bsas, agegrp_pmp)
+	agegrp = min(agegrp_apcd, agegrp_cm, agegrp_matris, agegrp_bsas, agegrp_pmp);
 RUN;
 
-ODS CSV FILE = cat(&year, "_OUDCount.csv");
 PROC SQL;
     CREATE TABLE oud_stratified AS
     SELECT DISTINCT *
-    IFN(COUNT(DISTINCT ID) > 0 AND COUNT(DISTINCT ID) < 11, 
-    -1,
-    COUNT(DISTINCT ID) AS N_ID_RSA)
+    IFN(COUNT(DISTINCT ID) > 0 AND COUNT(DISTINCT ID) < 11, -1, COUNT(DISTINCT ID) AS N_ID_RSA)
     FROM oud
+<<<<<<< Updated upstream
     GROUP BY agegrp, FINAL_RE, FINAL_SEX
 QUIT;
 ODS CSV CLOSE;
+=======
+    GROUP BY agegrp, FINAL_RE, FINAL_SEX;
+QUIT;
+
+PROC EXPORT
+	DATA= oud_stratified
+	OUTFILE= cat("/sas/data/DPH/OPH/PHD/FOLDERS/SUBSTANCE_USE_CODE/RESPOND/RESPOND UPDATE/OUDCount_", &year, ".csv")
+	DBMS= csv;
+RUN;
+>>>>>>> Stashed changes
