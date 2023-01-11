@@ -5,7 +5,7 @@
 /* Updated: NA         			*/
 /*==============================*/
 
-%LET year = 2020
+%LET year = 2020;
 
 %LET ICD = ('30400', '30401', '30402', '30403',
             '30470', '30471', '30472', '30473',
@@ -55,30 +55,30 @@
 
 /*=========APCD DATA=============*/
 DATA apcd_wide;
-    SET PHDAPCD.MEDICAL (KEEP = ID MED_ENCODE MED_ADM_DIAGNOSIS
+    SET PHDAPCD.MEDICAL (KEEP= ID MED_ENCODE MED_ADM_DIAGNOSIS
                                 MED_ICD_PROC1-MED_ICD_PROC7
                                 MED_ICD1-MED_ICD25
                                 MED_FROM_DATE_YEAR
-                        WHERE = (MED_FROM_DATE_YEAR = &year));
-    DROP MED_FROM_DATE_YEAR;
+                        WHERE= (MED_FROM_DATE_YEAR = &year));
+    DROP= MED_FROM_DATE_YEAR;
 RUN;
 
 /*======CASEMIX DATA==========*/
 /* ED */
 DATA ed_wide;
-    SET PHDCM.ED (KEEP = ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_ID
-                  WHERE = (ED_ADMIT_YEAR = &year));
-     DROP ED_ADMIT_YEAR;
+    SET PHDCM.ED (KEEP= ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_ID
+                  WHERE= (ED_ADMIT_YEAR = &year));
+     DROP= ED_ADMIT_YEAR;
 RUN;
 
 DATA ed_diag_wide;
-    SET PHDCM.ED_DIAG (KEEP = ID ED_ID ED_DIAG ED_ADMIT_YEAR
-                       WHERE = (ED_ADMIT_YEAR = &year));
+    SET PHDCM.ED_DIAG (KEEP= ID ED_ID ED_DIAG ED_ADMIT_YEAR
+                       WHERE= (ED_ADMIT_YEAR = &year));
     DROP ED_ADMIT_YEAR;
 RUN;
 
 DATA ed_proc_wide;
-    SET PHDCM.ED_PROC (KEEP = ED_ID ED_PROC);
+    SET PHDCM.ED_PROC (KEEP= ED_ID ED_PROC);
 RUN;
 
 /* CASEMIX ED MERGE */
@@ -91,15 +91,15 @@ QUIT;
 
 /* HD */
 DATA hd_raw_wide;
-    SET PHDCM.HD (KEEP = ID HD_DIAG1 HD_PROC1 HD_ADMIT_YEAR
-                    WHERE = (HD_ADMIT_YEAR = &year));
+    SET PHDCM.HD (KEEP= ID HD_DIAG1 HD_PROC1 HD_ADMIT_YEAR
+                    WHERE= (HD_ADMIT_YEAR = &year));
     DROP HD_ADMIT_YEAR;
 RUN;
 
 /* HD DIAG */
 DATA hd_diag_wide;
-    SET PHDCM.HD_DIAG (KEEP = ID HD_DIAG HD_ADMIT_YEAR
-                        WHERE = (HD_ADMIT_YEAR = &year));
+    SET PHDCM.HD_DIAG (KEEP= ID HD_DIAG HD_ADMIT_YEAR
+                        WHERE= (HD_ADMIT_YEAR = &year));
     DROP HD_ADMIT_YEAR;
 RUN;
 
@@ -113,8 +113,8 @@ QUIT;
 
 /* OO */
 DATA oo_wide;
-    SET PHDCM.OO (KEEP = ID OO_DIAG1-OO_DIAG6 OO_PROC1-OO_PROC4 OO_ADMIT_YEAR
-                    WHERE = (OO_ADMIT_YEAR = &year));
+    SET PHDCM.OO (KEEP= ID OO_DIAG1-OO_DIAG6 OO_PROC1-OO_PROC4 OO_ADMIT_YEAR
+                    WHERE= (OO_ADMIT_YEAR = &year));
 RUN;
 
 /*FULL CASEMIX MERGE */
@@ -150,7 +150,7 @@ DATA h0047_flag (KEEP = ID h0047_flag);
             IF vars1[i] = "H0047"
             THEN h0047_flag = h0047_flag+1;
         END;
-        DROP i;
+        DROP= i;
     IF h0047_flag > 0 THEN h0047_flag = 1;
     IF h0047_flag = 0 THEN DELETE;
 RUN;
@@ -174,7 +174,7 @@ DATA icd_flag (KEEP = ID icd_flag);
             IF vars1[i] = &ICD
             THEN icd_flag = icd_flag+1;
         END;
-        DROP i;
+        DROP= i;
     IF icd_flag > 0 THEN icd_flag = 1;
 RUN;
 
@@ -198,13 +198,16 @@ DATA flag;
 RUN;
 
 /* FREQUENCY TABLE PRINT*/
-ODS CSV FILE = cat(&year, "_ICDFreq.csv");
 PROC SQL;
     CREATE TABLE flag AS
     SELECT DISTINCT * 
     IFN(COUNT(DISTINCT ID) > 0 AND COUNT(DISTINCT ID) < 11, -1,
     COUNT(DISTINCT ID) AS N_ID_RSA)
     FROM flag;
-QUIT;
+RUN;
 
-ODS CSV CLOSE;
+PROC EXPORT
+    DATA= icd_freq
+    OUTFILE= cat("/sas/data/DPH/OPH/PHD/FOLDERS/SUBSTANCE_USE_CODE/RESPOND/RESPOND UPDATE/ICDFrequency_H0047_", &year, ".csv")
+    DBMS= csv;
+RUN;

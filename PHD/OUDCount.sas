@@ -229,7 +229,7 @@ PROC SQL;
 	LEFT JOIN hd_diag ON hd.ID = hd_diag.ID;
 QUIT;
 
-DATA hd (KEEP = ID oud_hd, agegrp_hd);
+DATA hd (KEEP= ID oud_hd, agegrp_hd);
 	SET hd;
 	IF SUM(oud_hd_diag, oud_hd_raw) > 0
 	THEN oud_hd = 1;
@@ -239,9 +239,9 @@ DATA hd (KEEP = ID oud_hd, agegrp_hd);
 RUN;
 
 /* OO */
-DATA oo (KEEP = ID oud_oo);
-    SET PHDCM.OO (KEEP = ID OO_DIAG1-6 OO_PROC1-4 OO_ADMIT_YEAR OO_AGE
-                    WHERE = (OO_ADMIT_YEAR = &year));
+DATA oo (KEEP= ID oud_oo);
+    SET PHDCM.OO (KEEP= ID OO_DIAG1-6 OO_PROC1-4 OO_ADMIT_YEAR OO_AGE
+                    WHERE= (OO_ADMIT_YEAR = &year));
 	cnt_oud_oo = 0
     ARRAY vars2 {*} OO_DIAG1-6 OO_PROC1-4;
         DO k = 1 TO dim(vars2);
@@ -312,13 +312,13 @@ PROC SQL;
 QUIT;
 
 /* MATRIS */
-DATA matris (KEEP = ID oud_matris agegrp_matris);
-SET PHDEMS.MATRIS (KEEP = ID OPIOID_ORI_MATRIS
+DATA matris (KEEP= ID oud_matris agegrp_matris);
+SET PHDEMS.MATRIS (KEEP= ID OPIOID_ORI_MATRIS
                           OPIOID_ORISUBCAT_MATRIS
                           inc_year_matris
 						  AGE_MATRIS
 						  AGE_UNITS_MATRIS
-                    WHERE = (inc_year_matris = &year));
+                    WHERE= (inc_year_matris = &year));
     IF OPIOID_ORI_MATRIS = 1 
         OR OPIOID_ORISUBCAT_MATRIS in (1-5)
     THEN oud_matris = 1;
@@ -344,9 +344,9 @@ PROC SQL;
 QUIT;
 
 /* DEATH */
-DATA death (KEEP = ID oud_death);
-    SET PHDDEATH.DEATH (KEEP = ID OPIOID_DEATH YEAR_DEATH
-                        WHERE = (YEAR_DEATH = &year));
+DATA death (KEEP= ID oud_death);
+    SET PHDDEATH.DEATH (KEEP= ID OPIOID_DEATH YEAR_DEATH
+                        WHERE= (YEAR_DEATH = &year));
     IF OPIOID_DEATH = 1 THEN oud_death = 1;
     ELSE oud_death = 0;
     IF oud_death = 0 THEN DELETE;
@@ -392,7 +392,7 @@ PROC SQL;
 QUIT;
 
 DATA oud;
-    SET oud (KEEP = ID, agegrp, FINAL_RE, FINAL_SEX);
+    SET oud (KEEP= ID, agegrp, FINAL_RE, FINAL_SEX);
     oud_cnt = sum(oud_apcd, oud_casemix, oud_death, oud_matris, oud_pmp);
     IF oud_cnt > 0 
     THEN oud_master = 1;
@@ -407,11 +407,6 @@ PROC SQL;
     SELECT DISTINCT *
     IFN(COUNT(DISTINCT ID) > 0 AND COUNT(DISTINCT ID) < 11, -1, COUNT(DISTINCT ID) AS N_ID_RSA)
     FROM oud
-<<<<<<< Updated upstream
-    GROUP BY agegrp, FINAL_RE, FINAL_SEX
-QUIT;
-ODS CSV CLOSE;
-=======
     GROUP BY agegrp, FINAL_RE, FINAL_SEX;
 QUIT;
 
@@ -420,4 +415,3 @@ PROC EXPORT
 	OUTFILE= cat("/sas/data/DPH/OPH/PHD/FOLDERS/SUBSTANCE_USE_CODE/RESPOND/RESPOND UPDATE/OUDCount_", &year, ".csv")
 	DBMS= csv;
 RUN;
->>>>>>> Stashed changes

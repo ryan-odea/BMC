@@ -67,15 +67,9 @@ RUN;
 /*======CASEMIX DATA==========*/
 /* ED */
 DATA ed_wide;
-<<<<<<< Updated upstream:PHD/ICDFrequency.sas
-    SET PHDCM.ED (KEEP = ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_ID
-                  WHERE = (ED_ADMIT_YEAR = &year));
-     DROP ED_ADMIT_YEAR;
-=======
     SET PHDCM.ED (KEEP= ID ED_DIAG1 ED_PRINCIPLE_ECODE ED_ADMIT_YEAR ED_ID
                   WHERE= (ED_ADMIT_YEAR = &year));
     DROP ED_ADMIT_YEAR;
->>>>>>> Stashed changes:PHD/ICD_Frequency.sas
 RUN;
 
 DATA ed_diag_wide;
@@ -120,13 +114,8 @@ QUIT;
 
 /* OO */
 DATA oo_wide;
-<<<<<<< Updated upstream:PHD/ICDFrequency.sas
-    SET PHDCM.OO (KEEP = ID OO_DIAG1-6 OO_PROC1-OO_PROC4 OO_ADMIT_YEAR
-                    WHERE = (OO_ADMIT_YEAR = &year));
-=======
     SET PHDCM.OO (KEEP= ID OO_DIAG1-OO_DIAG6 OO_PROC1-OO_PROC4 OO_ADMIT_YEAR
                     WHERE= (OO_ADMIT_YEAR = &year));
->>>>>>> Stashed changes:PHD/ICD_Frequency.sas
 RUN;
 
 /*FULL CASEMIX MERGE */
