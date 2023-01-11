@@ -7,8 +7,8 @@
 /*==============================================*/
 
 /*==============DEATH COUNT=====================*/
-DATA death (keep = ID oud_death year);
-    SET PHDDEATH.DEATH (keep = ID OPIOID_DEATH YEAR_DEATH);
+DATA death (KEEP= ID oud_death year);
+    SET PHDDEATH.DEATH (KEEP= ID OPIOID_DEATH YEAR_DEATH);
     IF OPIOID_DEATH = 1 
     THEN oud_death = 1;
     ELSE oud_death = 0;
